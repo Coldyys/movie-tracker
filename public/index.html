@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MovieTracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body className="bg-gray-100 font-sans">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // --- 1. KOMPONENTA: CATEGORIES (Route: categories) ---
+    function Categories(props) {
+      const [categories, setCategories] = React.useState([]);
+      const [name, setName] = React.useState('');
+
+      React.useEffect(function() {
+        fetchCategories();
+      }, []);
+
+      function fetchCategories() {
+        fetch('/category/list')
+          .then(function(res) { return res.json(); })
+          .then(function(data) { setCategories(data.categoryList); });
+      }
+
+      function handleSubmit(e) {
+        e.preventDefault();
+        fetch('/category/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name })
+        }).then(function() {
+          setName('');
+          fetchCategories();
+        });
+      }
+
+      function handleDeleteCategory(id) {
+        if (window.confirm('Opravdu chcete tuto platformu smazat?')) {
+          fetch('/category/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+          }).then(function(res) {
+            if (!res.ok) {
+              // Pokud backend vrátí chybu (např. platforma se používá), zobrazíme ji
+              res.json().then(function(data) { alert(data.message); });
+            } else {
+              fetchCategories();
+            }
+          });
+        }
+      }
+
+      return (
+        <div className="max-w-2xl mx-auto p-6 bg-white mt-10 rounded-lg shadow-sm">
+          <button onClick={props.onNavigateToDashboard} className="text-blue-600 hover:underline text-sm mb-4 block">
+            &larr; Zpět na Dashboard
+          </button>
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">Správa platforem (Kategorie)</h2>
+          
+          <form onSubmit={handleSubmit} className="flex space-x-3 mb-6">
+            <input type="text" value={name} onChange={function(e) { setName(e.target.value); }} placeholder="Název platformy (např. HBO Max)" required className="border p-2 rounded-lg flex-1 focus:outline-blue-500" />
+            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Přidat</button>
+          </form>
+
+          <ul>
+            {categories.map(function(cat) {
+              return (
+                <li key={cat.id} className="py-3 flex justify-between items-center border-b text-gray-700">
+                  <span className="font-medium">{cat.name}</span>
+                  <button onClick={function() { handleDeleteCategory(cat.id); }} className="text-red-600 hover:underline text-sm font-medium">
+                    Smazat
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      );
+    }
+
+    // --- 2. KOMPONENTA: DASHBOARD (Route: dashboard) ---
+    function Dashboard(props) {
+      const [movies, setMovies] = React.useState([]);
+      const [categories, setCategories] = React.useState([]);
+      const [isModalOpen, setIsModalOpen] = React.useState(false);
+      
+      const [movieId, setMovieId] = React.useState('');
+      const [title, setTitle] = React.useState('');
+      const [year, setYear] = React.useState('');
+      const [categoryId, setCategoryId] = React.useState('');
+      const [status, setStatus] = React.useState('To Watch');
+
+      React.useEffect(function() {
+        fetchData();
+      }, []);
+
+      function fetchData() {
+        fetch('/category/list')
+          .then(function(res) { return res.json(); })
+          .then(function(data) { setCategories(data.categoryList); });
+
+        fetch('/movie/list')
+          .then(function(res) { return res.json(); })
+          .then(function(data) { setMovies(data.itemList); });
+      }
+
+      function openCreateModal() {
+        setMovieId('');
+        setTitle('');
+        setYear('');
+        setCategoryId('');
+        setStatus('To Watch');
+        setIsModalOpen(true);
+      }
+
+      function openEditModal(movie) {
+        setMovieId(movie.id);
+        setTitle(movie.title);
+        setYear(movie.year);
+        setCategoryId(movie.categoryId);
+        setStatus(movie.status);
+        setIsModalOpen(true);
+      }
+
+      function handleFormSubmit(event) {
+        event.preventDefault();
+        if (!categoryId) {
+          alert('Musíte vybrat platnou platformu!');
+          return;
+        }
+
+        const url = movieId ? '/movie/update' : '/movie/create';
+        const payload = { title: title, year: Number(year), categoryId: categoryId };
+        if (movieId) {
+          payload.id = movieId;
+          payload.status = status;
+        }
+
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(function() {
+          setIsModalOpen(false);
+          fetchData();
+        });
+      }
+
+      function handleDelete(id) {
+        if (window.confirm('Opravdu smazat tento film?')) {
+          fetch('/movie/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+          }).then(function() {
+            fetchData();
+          });
+        }
+      }
+
+      return (
+        <div className="max-w-5xl mx-auto p-6">
+          <header className="flex justify-between items-center mb-8 bg-white p-6 rounded-lg shadow-sm">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">MovieTracker</h1>
+              <p className="text-gray-500 text-sm">Personal watchlist</p>
+            </div>
+            <div className="space-x-3">
+              <button onClick={props.onNavigateToCategories} className="text-blue-600 hover:underline text-sm font-medium">
+                Správa platforem &rarr;
+              </button>
+              <button onClick={openCreateModal} className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition">
+                + Přidat film
+              </button>
+            </div>
+          </header>
+
+          <main className="bg-white p-6 rounded-lg shadow-sm">
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Můj Watchlist</h2>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b text-gray-400 text-sm">
+                  <th className="pb-3 font-medium">Název</th>
+                  <th className="pb-3 font-medium">Rok</th>
+                  <th className="pb-3 font-medium">Platforma</th>
+                  <th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 font-medium text-right">Akce</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-600 text-sm">
+                {movies.map(function(movie) {
+                  const cat = categories.find(function(c) { return c.id === movie.categoryId; });
+                  return (
+                    <tr key={movie.id} className="border-b hover:bg-gray-50">
+                      <td className="py-4 font-medium text-gray-800">{movie.title}</td>
+                      <td className="py-4">{movie.year}</td>
+                      <td className="py-4"><span className="bg-gray-200 px-2 py-1 rounded text-xs">{cat ? cat.name : 'Neznámá'}</span></td>
+                      <td className="py-4">
+                        <span className={`text-xs font-semibold ${movie.status === 'Watched' ? 'text-green-600' : 'text-orange-500'}`}>
+                          {movie.status}
+                        </span>
+                      </td>
+                      <td className="py-4 text-right space-x-3">
+                        <button onClick={function() { openEditModal(movie); }} className="text-blue-600 hover:underline font-medium">Upravit</button>
+                        <button onClick={function() { handleDelete(movie.id); }} className="text-red-600 hover:underline font-medium">Smazat</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </main>
+
+          {/* Podmíněné vykreslení Modálního okna */}
+          {isModalOpen && (
+            <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-lg">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">{movieId ? 'Upravit film' : 'Nový film'}</h3>
+                <form onSubmit={handleFormSubmit}>
+                  <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Název filmu *</label>
+                    <input type="text" value={title} onChange={function(e) { setTitle(e.target.value); }} required className="w-full border p-2 rounded-lg focus:outline-blue-500" />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Rok vydání *</label>
+                    <input type="number" value={year} onChange={function(e) { setYear(e.target.value); }} required className="w-full border p-2 rounded-lg focus:outline-blue-500" />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-medium mb-1">Platforma *</label>
+                    <select value={categoryId} onChange={function(e) { setCategoryId(e.target.value); }} required className="w-full border p-2 rounded-lg focus:outline-blue-500">
+                      <option value="" disabled>-- Vyber platformu --</option>
+                      {categories.map(function(cat) {
+                        return <option key={cat.id} value={cat.id}>{cat.name}</option>;
+                      })}
+                    </select>
+                  </div>
+                  {movieId && (
+                    <div className="mb-6">
+                      <label className="block text-gray-700 text-sm font-medium mb-1">Status</label>
+                      <select value={status} onChange={function(e) { setStatus(e.target.value); }} className="w-full border p-2 rounded-lg focus:outline-blue-500">
+                        <option value="To Watch">To Watch</option>
+                        <option value="Watched">Watched</option>
+                      </select>
+                    </div>
+                  )}
+                  <div className="flex justify-end space-x-3">
+                    <button type="button" onClick={function() { setIsModalOpen(false); }} className="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50">Zrušit</button>
+                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Uložit</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- 3. HLAVNÍ APLIKACE (SPA Router) ---
+    function App() {
+      const [currentRoute, setCurrentRoute] = React.useState('dashboard');
+
+      if (currentRoute === 'categories') {
+        return <Categories onNavigateToDashboard={function() { setCurrentRoute('dashboard'); }} />;
+      }
+
+      return <Dashboard onNavigateToCategories={function() { setCurrentRoute('categories'); }} />;
+    }
+
+    // Vykreslení do prohlížeče
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
