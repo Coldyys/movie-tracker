@@ -14,7 +14,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    // --- 1. KOMPONENTA: CATEGORIES (Route: categories) ---
+    // Route: categories
     function Categories(props) {
       const [categories, setCategories] = React.useState([]);
       const [name, setName] = React.useState('');
@@ -49,7 +49,7 @@
             body: JSON.stringify({ id: id })
           }).then(function(res) {
             if (!res.ok) {
-              // Pokud backend vrátí chybu (např. platforma se používá), zobrazíme ji
+              // Pokud backend vrátí chybu (např. platforma se používá), zobrazí se
               res.json().then(function(data) { alert(data.message); });
             } else {
               fetchCategories();
@@ -86,7 +86,7 @@
       );
     }
 
-    // --- 2. KOMPONENTA: DASHBOARD (Route: dashboard) ---
+    // Route: Dashboard
     function Dashboard(props) {
       const [movies, setMovies] = React.useState([]);
       const [categories, setCategories] = React.useState([]);
@@ -219,7 +219,7 @@
             </table>
           </main>
 
-          {/* Podmíněné vykreslení Modálního okna */}
+          {/* Vykreslení modálního okna */}
           {isModalOpen && (
             <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
               <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-lg">
@@ -263,7 +263,7 @@
       );
     }
 
-    // --- 3. HLAVNÍ APLIKACE (SPA Router) ---
+    // SPA Router
     function App() {
       const [currentRoute, setCurrentRoute] = React.useState('dashboard');
 

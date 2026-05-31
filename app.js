@@ -6,13 +6,13 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Servírování statických souborů z public
+// Použití statiských souborů z public
 app.use(express.static(path.join(__dirname, 'public')));
 
 const MOVIES_FILE = path.join(__dirname, 'movies.json');
 const CATEGORIES_FILE = path.join(__dirname, 'categories.json');
 
-// Funkce pro práci s trvalým úložištěm (soubory)
+// Funkce pro práci s trvalým úložištěm
 function loadData(filePath, fallbackData) {
   try {
     if (!fs.existsSync(filePath)) {
@@ -42,12 +42,12 @@ let movies = loadData(MOVIES_FILE, [
   { id: "101", title: "Interstellar", year: 2014, categoryId: "1", status: "To Watch" }
 ]);
 
-// Hlavní směrování na React frontend
+// Hlavní směrování na frontend
 app.get('/', function(req, res) {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// --- API CATEGORY (Platformy) ---
+// Platformy
 app.get('/category/list', function(req, res) {
   res.json({ categoryList: categories });
 });
@@ -69,7 +69,7 @@ app.post('/category/delete', function(req, res) {
     return res.status(400).json({ error: "dtoInIsNotValid", message: "ID is required." });
   }
 
-  // KONTROLA VAZBY: Zjistíme, jestli nějaký film nepoužívá tuto kategorii
+  // Zjistí, jestli nějaký film nepoužívá tuto kategorii
   const isUsed = movies.some(function(m) { return m.categoryId === String(id); });
   if (isUsed) {
     return res.status(400).json({ 
@@ -89,7 +89,7 @@ app.post('/category/delete', function(req, res) {
   res.json({ success: true });
 });
 
-// --- API MOVIE (Filmy) ---
+// Filmy
 app.get('/movie/list', function(req, res) {
   const categoryMap = {};
   categories.forEach(function(cat) {

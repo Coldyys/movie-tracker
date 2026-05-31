@@ -12,7 +12,7 @@ function Dashboard(props) {
   const [categoryId, setCategoryId] = useState('');
   const [status, setStatus] = useState('To Watch');
 
-  // Načtení dat při namontování komponenty (Lifecycle)
+  // Načtení dat při použití komponenty
   useEffect(function() {
     fetchData();
   }, []);
@@ -134,7 +134,7 @@ function Dashboard(props) {
         </table>
       </main>
 
-      {/* Podmíněné vykreslení Modálního okna (Render Rule) */}
+      {/* Vykreslení modálního okna */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-lg">
